@@ -18,7 +18,8 @@ from database import (
     get_all_candidates, get_candidate, get_candidate_scores,
     get_dashboard_stats, update_candidate_status, get_status_history,
     save_rubric_feedback, get_pending_feedback, get_candidates_by_tier,
-    get_recent_activity, get_processing_timeline, get_area_distribution
+    get_recent_activity, get_processing_timeline, get_area_distribution,
+    DB_INIT_ERROR, USE_POSTGRES, DATABASE_URL
 )
 from notifications import generate_handoff_email
 
@@ -28,6 +29,24 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# ── Database connection guard ─────────────────────────────────────────────────
+# Show a clear error page if init_db() failed (bypasses Streamlit's redaction)
+if DB_INIT_ERROR:
+    st.error("⚠️ Database Connection Failed")
+    st.markdown("The dashboard could not connect to the database. Full diagnostics:")
+    st.code(DB_INIT_ERROR, language="text")
+    st.info(
+        "**To fix this on Streamlit Cloud:**\n\n"
+        "1. Go to your app → **Manage app** → **Secrets**\n"
+        "2. Make sure `DATABASE_URL` uses the **Session Pooler** URL from Supabase\n"
+        "   - Supabase → Settings → Database → scroll to top → Connection string → Type: **Session pooler**\n"
+        "3. The URL should look like:\n"
+        "   `postgresql://postgres.YOURPROJECT:PASSWORD@aws-0-REGION.pooler.supabase.com:5432/postgres`\n"
+        "4. Save secrets and wait for the app to redeploy"
+    )
+    st.stop()
+# ─────────────────────────────────────────────────────────────────────────────
 
 # Custom CSS
 st.markdown("""

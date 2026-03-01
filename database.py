@@ -62,6 +62,10 @@ def _resolve_database_url():
 DATABASE_URL = _resolve_database_url()
 USE_POSTGRES = bool(DATABASE_URL)
 
+# Stores any error that occurs during init_db() so the dashboard can display it
+# clearly rather than letting Streamlit Cloud redact a crash traceback.
+DB_INIT_ERROR = None
+
 
 # ─── Connection & Cursor Helpers ──────────────────────────────────────────────
 
@@ -633,4 +637,21 @@ def get_area_distribution():
 
 
 # ─── Initialise on import ─────────────────────────────────────────────────────
-init_db()
+# Catch errors so a failed DB connection doesn't crash the import.
+# DB_INIT_ERROR is checked by dashboard.py to show a clear error message
+# instead of letting Streamlit Cloud redact the traceback.
+try:
+    init_db()
+except Exception as _e:
+    import traceback
+    DB_INIT_ERROR = (
+        f"Database connection failed.\n\n"
+        f"Backend: {'PostgreSQL' if USE_POSTGRES else 'SQLite'}\n"
+        f"DATABASE_URL set: {bool(DATABASE_URL)}\n"
+        f"Host: {__import__('urllib.parse', fromlist=['']).urlparse(DATABASE_URL).hostname if DATABASE_URL else 'N/A'}\n"
+        f"Port: {__import__('urllib.parse', fromlist=['']).urlparse(DATABASE_URL).port if DATABASE_URL else 'N/A'}\n"
+        f"SSL in URL: {'yes' if 'sslmode' in DATABASE_URL else 'no (auto-added)'}\n\n"
+        f"Error type: {type(_e).__name__}\n"
+        f"Error detail: {_e}\n\n"
+        f"Full traceback:\n{traceback.format_exc()}"
+    )
