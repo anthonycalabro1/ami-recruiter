@@ -51,8 +51,10 @@ def _resolve_database_url():
         url = re.sub(r':(\[)([^\]]+)(\])@', r':\2@', url)
 
         # Ensure SSL is enabled (required by Supabase)
-        if 'supabase.co' in url and 'sslmode' not in url:
-            url += '?sslmode=require'
+        # Covers both supabase.co (direct) and supabase.com (pooler)
+        if 'supabase.' in url and 'sslmode' not in url:
+            separator = '&' if '?' in url else '?'
+            url += f'{separator}sslmode=require'
 
     return url
 
