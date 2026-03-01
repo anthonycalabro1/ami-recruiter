@@ -29,6 +29,10 @@ def _resolve_database_url():
     Resolve DATABASE_URL from (in priority order):
     1. Environment variable  — Streamlit Cloud secrets inject these automatically
     2. config.yaml key       — local pipeline convenience
+
+    Also strips any accidental square brackets Supabase puts around passwords
+    in their UI (e.g. postgres:[PASSWORD] → postgres:PASSWORD) and ensures
+    sslmode=require is present for Supabase connections.
     """
     url = os.environ.get('DATABASE_URL', '')
     if not url:
@@ -39,6 +43,17 @@ def _resolve_database_url():
             url = _cfg.get('database_url', '') or ''
         except Exception:
             pass
+
+    if url:
+        # Strip brackets Supabase shows around passwords in their UI
+        # e.g.  postgres:[MyPassword]@host  →  postgres:MyPassword@host
+        import re
+        url = re.sub(r':(\[)([^\]]+)(\])@', r':\2@', url)
+
+        # Ensure SSL is enabled (required by Supabase)
+        if 'supabase.co' in url and 'sslmode' not in url:
+            url += '?sslmode=require'
+
     return url
 
 
