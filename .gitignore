@@ -1,0 +1,35 @@
+# Credentials and secrets
+.env
+config.yaml
+auth_config.yaml
+.streamlit/secrets.toml
+
+# Database
+*.db
+*.db-wal
+*.db-shm
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+Lib/
+Scripts/
+share/
+etc/
+*.egg-info/
+
+# Candidate data (PII)
+AMI_Candidates_Inbox/
+AMI_Candidates_Processed/
+AMI_Candidates_Failed/
+
+# Logs
+logs/
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code (AI assistant files)
+.claude/

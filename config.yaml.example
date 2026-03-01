@@ -1,0 +1,38 @@
+# ============================================================
+# AMI Recruiting Automation - Configuration
+# ============================================================
+
+# Anthropic API Key
+# Get yours at: https://console.anthropic.com
+# Set via .env file (ANTHROPIC_API_KEY) or directly here
+anthropic_api_key: "YOUR_API_KEY_HERE"
+
+# Claude model to use for processing
+model: "claude-sonnet-4-20250514"
+
+# Gmail Notification Settings
+# Set via .env file or directly here
+gmail_address: "YOUR_EMAIL@gmail.com"
+gmail_app_password: "YOUR_APP_PASSWORD"
+notification_email: "YOUR_EMAIL@gmail.com"
+
+# Notification preferences - which tiers trigger email notifications
+notify_on_high: true
+notify_on_medium: true
+notify_on_low: true
+
+# Folder paths (relative to project directory)
+inbox_folder: "AMI_Candidates_Inbox"
+processed_folder: "AMI_Candidates_Processed"
+failed_folder: "AMI_Candidates_Failed"
+
+# Dashboard settings
+dashboard_port: 8501
+
+# Job posting URLs (update these with your actual requisition links)
+senior_req_url: "https://careers.ey.com/YOUR_SENIOR_REQ_LINK"
+manager_req_url: "https://careers.ey.com/YOUR_MANAGER_REQ_LINK"
+
+# Failed resume retry settings
+failed_retry_interval_minutes: 60
+failed_max_retries: 3
