@@ -67,7 +67,26 @@ def get_connection():
     """Open and return a database connection."""
     if USE_POSTGRES:
         import psycopg2
-        return psycopg2.connect(DATABASE_URL)
+        try:
+            return psycopg2.connect(DATABASE_URL)
+        except psycopg2.OperationalError as e:
+            # Surface the real error (Streamlit Cloud redacts it otherwise)
+            import urllib.parse
+            try:
+                parsed = urllib.parse.urlparse(DATABASE_URL)
+                safe_url = f"{parsed.scheme}://***:***@{parsed.hostname}:{parsed.port}{parsed.path}"
+            except Exception:
+                safe_url = "(could not parse URL)"
+            raise RuntimeError(
+                f"PostgreSQL connection failed.\n"
+                f"URL used (credentials hidden): {safe_url}\n"
+                f"Original error: {e}\n\n"
+                f"Common fixes:\n"
+                f"  1. Use the Supabase Session Pooler URL (port 5432), not the direct URL\n"
+                f"     Supabase → Settings → Database → Connection pooling → Session mode\n"
+                f"  2. Ensure no square brackets around the password\n"
+                f"  3. Ensure ?sslmode=require is appended"
+            ) from e
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
