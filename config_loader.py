@@ -15,10 +15,13 @@ try:
 except ImportError:
     pass  # python-dotenv not installed, rely on config.yaml only
 
-# Load base config from YAML
+# Load base config from YAML (optional — not present on Streamlit Cloud since it's gitignored)
 CONFIG_PATH = os.path.join(PROJECT_DIR, "config.yaml")
-with open(CONFIG_PATH, 'r') as f:
-    CONFIG = yaml.safe_load(f)
+try:
+    with open(CONFIG_PATH, 'r') as f:
+        CONFIG = yaml.safe_load(f) or {}
+except FileNotFoundError:
+    CONFIG = {}  # Running on Streamlit Cloud — all values come from environment variables
 
 # Override with environment variables if present (only when non-empty)
 CONFIG['anthropic_api_key'] = os.environ.get('ANTHROPIC_API_KEY') or CONFIG.get('anthropic_api_key', '')
