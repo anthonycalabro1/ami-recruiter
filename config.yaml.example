@@ -36,3 +36,9 @@ manager_req_url: "https://careers.ey.com/YOUR_MANAGER_REQ_LINK"
 # Failed resume retry settings
 failed_retry_interval_minutes: 60
 failed_max_retries: 3
+
+# Database (optional — leave blank to use local SQLite)
+# Set to your Supabase PostgreSQL connection string to enable cloud database.
+# Get it from: Supabase project → Settings → Database → Connection string → URI
+# Example: postgresql://postgres:PASSWORD@db.PROJECT_REF.supabase.co:5432/postgres
+database_url: ""

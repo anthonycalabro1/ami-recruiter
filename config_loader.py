@@ -26,6 +26,7 @@ CONFIG['gmail_address'] = os.environ.get('GMAIL_ADDRESS') or CONFIG.get('gmail_a
 CONFIG['gmail_app_password'] = os.environ.get('GMAIL_APP_PASSWORD') or CONFIG.get('gmail_app_password', '')
 CONFIG['notification_email'] = os.environ.get('NOTIFICATION_EMAIL') or CONFIG.get('notification_email', '')
 CONFIG['model'] = os.environ.get('CLAUDE_MODEL') or CONFIG.get('model', 'claude-sonnet-4-20250514')
+CONFIG['database_url'] = os.environ.get('DATABASE_URL') or CONFIG.get('database_url', '')
 
 # Export PROJECT_DIR for use by other modules
 CONFIG['_project_dir'] = PROJECT_DIR
