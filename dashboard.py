@@ -148,7 +148,7 @@ def main():
         for a in activity:
             st.sidebar.caption(
                 f"**{a['candidate_name']}**: {_format_status(a['new_status'])} "
-                f"({a['changed_by']}, {a['created_at'][:16]})"
+                f"({a['changed_by']}, {str(a['created_at'])[:16]})"
             )
     else:
         st.sidebar.caption("No activity yet.")
@@ -246,7 +246,7 @@ def show_pipeline_overview():
             'Tier': highest_score['tier'] if highest_score else 'N/A',
             'Status': _format_status(c['status']),
             'Areas Scored': len(scores),
-            'Date': c['created_at'][:10] if c['created_at'] else ''
+            'Date': str(c['created_at'])[:10] if c['created_at'] else ''
         })
 
     # Apply search filter
@@ -407,7 +407,7 @@ def show_candidate_details():
     with st.expander("📋 Status History"):
         if history:
             for h in history:
-                st.write(f"**{h['created_at']}** — {_format_status(h['new_status'])} "
+                st.write(f"**{str(h['created_at'])[:16]}** — {_format_status(h['new_status'])} "
                          f"(by {h['changed_by']}) {': ' + h['notes'] if h['notes'] else ''}")
         else:
             st.write("No history available.")
@@ -607,7 +607,7 @@ def show_rubric_feedback():
         return
 
     for fb in feedback:
-        with st.expander(f"📋 {fb['candidate_name']} — {fb['functional_area']} — {fb['created_at'][:10]}"):
+        with st.expander(f"📋 {fb['candidate_name']} — {fb['functional_area']} — {str(fb['created_at'])[:10]}"):
             st.write(f"**Type:** {fb['feedback_type']}")
             st.write(f"**Feedback:** {fb['feedback_text']}")
             if st.button("Mark Resolved", key=f"resolve_{fb['id']}"):
