@@ -16,22 +16,66 @@ sys.path.insert(0, PROJECT_DIR)
 
 from database import (
     get_all_candidates, get_candidate, get_candidate_scores,
-    get_dashboard_stats, update_candidate_status, get_status_history,
+    get_dashboard_stats, update_candidate_status, update_candidate, get_status_history,
     save_rubric_feedback, get_pending_feedback, get_candidates_by_tier,
     get_recent_activity, get_processing_timeline, get_area_distribution,
     DB_INIT_ERROR, USE_POSTGRES, DATABASE_URL
 )
 from notifications import generate_handoff_email
 
+
+# ─── UI Constants ─────────────────────────────────────────────────────────────
+
+STATUS_FILTER_OPTIONS = {
+    "All":                             None,
+    "🟢 Scored — High":               "scored_high",
+    "🟡 Scored — Medium":             "scored_medium",
+    "🟠 Scored — Low":                "scored_low",
+    "🔴 Eliminated — Pending Review": "eliminated_pending_review",
+    "❌ Eliminated — Confirmed":      "eliminated_confirmed",
+    "📅 Phone Screen Scheduled":      "phone_screen_scheduled",
+    "✅ Passed — Senior":             "phone_screen_pass_senior",
+    "✅ Passed — Manager":            "phone_screen_pass_manager",
+    "❌ Phone Screen Rejected":       "phone_screen_reject",
+    "🏁 Handed Off":                  "handed_off",
+    "⏳ Processing":                  "processing",
+    "⚠️ Error":                       "error",
+}
+
+_TIER_CELL_STYLE = {
+    'HIGH':       'background-color: #1B7A2F; color: white; font-weight: bold;',
+    'MEDIUM':     'background-color: #CC7A00; color: white; font-weight: bold;',
+    'LOW':        'background-color: #CC4400; color: white; font-weight: bold;',
+    'ELIMINATED': 'background-color: #CC0000; color: white; font-weight: bold;',
+    'N/A':        'background-color: #3a3a3a; color: #aaa;  font-weight: bold;',
+}
+
+NAV_PAGES = [
+    "📊 Pipeline Overview",
+    "👤 Candidate Details",
+    "📈 Analytics",
+    "🔍 Eliminated Review",
+    "📝 Rubric Feedback",
+    "📧 Handoff Email Generator",
+    "⚙️ System",
+]
+
+
+# ─── Page config ──────────────────────────────────────────────────────────────
+
 st.set_page_config(
     page_title="AMI Recruiting Dashboard",
     page_icon="🎯",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    menu_items={
+        "Get help": None,
+        "Report a bug": None,
+        "About": "AMI Recruiting Dashboard — Candidate Pipeline Management",
+    },
 )
 
 # ── Database connection guard ─────────────────────────────────────────────────
-# Show a clear error page if init_db() failed (bypasses Streamlit's redaction)
 if DB_INIT_ERROR:
     st.error("⚠️ Database Connection Failed")
     st.markdown("The dashboard could not connect to the database. Full diagnostics:")
@@ -48,83 +92,104 @@ if DB_INIT_ERROR:
     st.stop()
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Custom CSS
+
+# ─── Custom CSS ───────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    .main-header {
-        background: linear-gradient(135deg, #1B3A5C, #2E75B6);
-        color: white;
-        padding: 20px 30px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-    }
-    .metric-card {
-        background: white;
-        padding: 15px;
-        border-radius: 8px;
-        border: 1px solid #e0e0e0;
-        text-align: center;
-    }
-    .tier-high { background-color: #1B7A2F; color: white; padding: 4px 12px; border-radius: 4px; font-weight: bold; }
-    .tier-medium { background-color: #CC7A00; color: white; padding: 4px 12px; border-radius: 4px; font-weight: bold; }
-    .tier-low { background-color: #CC4400; color: white; padding: 4px 12px; border-radius: 4px; font-weight: bold; }
-    .tier-eliminated { background-color: #CC0000; color: white; padding: 4px 12px; border-radius: 4px; font-weight: bold; }
-    .stTabs [data-baseweb="tab-list"] { gap: 8px; }
-    .stTabs [data-baseweb="tab"] {
-        padding: 10px 20px;
-        border-radius: 4px 4px 0 0;
-    }
-    /* Fix selectbox dropdown visibility */
-    [data-baseweb="popover"] {
-        background-color: #1e2a3a !important;
-        border: 1px solid #4a90d9 !important;
-        border-radius: 8px !important;
-    }
-    [data-baseweb="menu"] {
-        background-color: #1e2a3a !important;
-    }
-    [data-baseweb="menu"] [role="option"] {
-        color: #e0e8f0 !important;
-        background-color: #1e2a3a !important;
-    }
-    [data-baseweb="menu"] [role="option"]:hover {
-        background-color: #2e75b6 !important;
-        color: #ffffff !important;
-    }
-    [data-baseweb="menu"] [aria-selected="true"] {
-        background-color: #34526e !important;
-        color: #ffffff !important;
-    }
+/* ── Design tokens ──────────────────────────────────────────────────────────── */
+:root {
+    --primary:    #2E75B6;
+    --primary-dk: #1B3A5C;
+    --success:    #1B7A2F;
+    --warning:    #CC7A00;
+    --danger-lt:  #CC4400;
+    --danger:     #CC0000;
+    --border:     rgba(255,255,255,0.08);
+    --text-muted: #8fa3b8;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────────── */
+.main-header {
+    background: linear-gradient(135deg, #1B3A5C 0%, #2E75B6 100%);
+    color: white;
+    padding: 22px 30px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+}
+.main-header h1 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+.main-header p {
+    margin: 5px 0 0 0;
+    opacity: 0.75;
+    font-size: 14px;
+}
+
+/* ── Tier badges (used in expander headers & candidate detail) ───────────────── */
+.tier-high       { background: #1B7A2F; color: white; padding: 3px 11px; border-radius: 5px; font-weight: 700; font-size: 12px; white-space: nowrap; display: inline-block; }
+.tier-medium     { background: #CC7A00; color: white; padding: 3px 11px; border-radius: 5px; font-weight: 700; font-size: 12px; white-space: nowrap; display: inline-block; }
+.tier-low        { background: #CC4400; color: white; padding: 3px 11px; border-radius: 5px; font-weight: 700; font-size: 12px; white-space: nowrap; display: inline-block; }
+.tier-eliminated { background: #CC0000; color: white; padding: 3px 11px; border-radius: 5px; font-weight: 700; font-size: 12px; white-space: nowrap; display: inline-block; }
+
+/* ── Selected-row callout ───────────────────────────────────────────────────── */
+.selected-callout {
+    background: linear-gradient(90deg, rgba(46,117,182,0.14), transparent);
+    border-left: 3px solid #2E75B6;
+    padding: 10px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 4px 0 10px 0;
+    font-size: 14px;
+}
+
+/* ── Tabs ───────────────────────────────────────────────────────────────────── */
+.stTabs [data-baseweb="tab-list"] { gap: 4px; }
+.stTabs [data-baseweb="tab"] {
+    padding: 8px 18px;
+    border-radius: 6px 6px 0 0;
+    font-weight: 500;
+    font-size: 14px;
+}
 </style>
 """, unsafe_allow_html=True)
 
 
+# ─── Helper: tier badge HTML ───────────────────────────────────────────────────
 def tier_badge(tier):
-    """Create an HTML tier badge."""
-    tier_class = f"tier-{tier.lower()}" if tier else "tier-eliminated"
-    return f'<span class="{tier_class}">{tier}</span>'
+    """Return an HTML tier badge span."""
+    safe = (tier or '').lower()
+    tier_class = f"tier-{safe}" if safe in ('high', 'medium', 'low', 'eliminated') else "tier-eliminated"
+    return f'<span class="{tier_class}">{tier or "N/A"}</span>'
 
+
+# ─── Helper: color the Tier column in a DataFrame ─────────────────────────────
+def _style_tier_col(series):
+    return [_TIER_CELL_STYLE.get(str(v), '') for v in series]
+
+
+# ─── Main app ─────────────────────────────────────────────────────────────────
 
 def main():
-    # Header
+    # ── Session-state bootstrap ───────────────────────────────────────────────
+    if 'jump_to_candidate' not in st.session_state:
+        st.session_state.jump_to_candidate = None
+
+    # ── Header ────────────────────────────────────────────────────────────────
     st.markdown("""
     <div class="main-header">
-        <h1 style="margin:0; font-size: 28px;">🎯 AMI Recruiting Dashboard</h1>
-        <p style="margin:5px 0 0 0; opacity: 0.9;">Candidate Pipeline Management</p>
+        <h1>🎯 AMI Recruiting Dashboard</h1>
+        <p>Candidate Pipeline Management</p>
     </div>
     """, unsafe_allow_html=True)
 
-    # Sidebar navigation
+    # ── Sidebar navigation ────────────────────────────────────────────────────
     st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", [
-        "📊 Pipeline Overview",
-        "👤 Candidate Details",
-        "📈 Analytics",
-        "🔍 Eliminated Review",
-        "📝 Rubric Feedback",
-        "📧 Handoff Email Generator",
-        "⚙️ System"
-    ])
+    # key="nav_page" lets us programmatically switch pages via session state
+    page = st.sidebar.radio("Go to", NAV_PAGES, key="nav_page")
 
     # Auto-refresh control
     st.sidebar.divider()
@@ -135,7 +200,6 @@ def main():
             from streamlit_autorefresh import st_autorefresh
             st_autorefresh(interval=refresh_interval * 1000, key="auto_refresh")
         except ImportError:
-            # Fallback if streamlit-autorefresh not installed
             import time
             time.sleep(refresh_interval)
             st.rerun()
@@ -153,7 +217,7 @@ def main():
     else:
         st.sidebar.caption("No activity yet.")
 
-    # Page routing
+    # ── Page routing ──────────────────────────────────────────────────────────
     if page == "📊 Pipeline Overview":
         show_pipeline_overview()
     elif page == "👤 Candidate Details":
@@ -170,11 +234,13 @@ def main():
         show_system_status()
 
 
+# ─── Pipeline Overview ────────────────────────────────────────────────────────
+
 def show_pipeline_overview():
     """Show the main pipeline overview with metrics and candidate list."""
     stats = get_dashboard_stats()
 
-    # Metrics row
+    # ── Metrics row ───────────────────────────────────────────────────────────
     col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
     with col1:
         st.metric("Total", stats['total_candidates'])
@@ -193,18 +259,13 @@ def show_pipeline_overview():
 
     st.divider()
 
-    # Search box
+    # ── Search & Filters ──────────────────────────────────────────────────────
     search_term = st.text_input("🔍 Search by candidate name", "", key="search")
 
-    # Filter controls
     col1, col2, col3 = st.columns(3)
     with col1:
-        status_filter = st.selectbox("Filter by Status", [
-            "All", "scored_high", "scored_medium", "scored_low",
-            "eliminated_pending_review", "phone_screen_scheduled",
-            "phone_screen_pass_senior", "phone_screen_pass_manager",
-            "phone_screen_reject", "handed_off", "processing", "error"
-        ])
+        status_label = st.selectbox("Filter by Status", list(STATUS_FILTER_OPTIONS.keys()))
+        status_filter = STATUS_FILTER_OPTIONS[status_label]
     with col2:
         fa_filter = st.selectbox("Filter by Functional Area", [
             "All", "Strategy & Business Case", "Business Integration",
@@ -213,22 +274,18 @@ def show_pipeline_overview():
     with col3:
         sort_by = st.selectbox("Sort by", ["Most Recent", "Highest Score", "Name"])
 
-    # Get candidates
-    if status_filter == "All":
-        candidates = get_all_candidates()
-    else:
-        candidates = get_all_candidates(status_filter)
+    # ── Fetch candidates ──────────────────────────────────────────────────────
+    candidates = get_all_candidates(status_filter) if status_filter else get_all_candidates()
 
     if not candidates:
         st.info("No candidates found. Drop resumes into the AMI_Candidates_Inbox folder to get started.")
         return
 
-    # Build display data
+    # ── Build display data ────────────────────────────────────────────────────
     display_data = []
     for c in candidates:
         scores = get_candidate_scores(c['id'])
 
-        # Filter by functional area if specified
         if fa_filter != "All":
             scores = [s for s in scores if s['functional_area'] == fa_filter]
             if not scores:
@@ -237,50 +294,77 @@ def show_pipeline_overview():
         highest_score = max(scores, key=lambda s: s['weighted_score'] or 0) if scores else None
 
         display_data.append({
-            'ID': c['id'],
-            'Name': c['name'],
-            'AMI Years': c['total_ami_years'] or 0,
+            'ID':           c['id'],
+            'Name':         c['name'],
+            'AMI Years':    c['total_ami_years'] or 0,
             'Role Routing': _format_routing(c['role_routing']),
             'Primary Area': highest_score['functional_area'] if highest_score else 'N/A',
-            'Score': f"{highest_score['weighted_score']:.2f}" if highest_score and highest_score['weighted_score'] else 'N/A',
-            'Tier': highest_score['tier'] if highest_score else 'N/A',
-            'Status': _format_status(c['status']),
-            'Areas Scored': len(scores),
-            'Date': str(c['created_at'])[:10] if c['created_at'] else ''
+            'Score':        f"{highest_score['weighted_score']:.2f}" if highest_score and highest_score['weighted_score'] else 'N/A',
+            'Tier':         highest_score['tier'] if highest_score else 'N/A',
+            'Status':       _format_status(c['status']),
+            'Areas':        len(scores),
+            'Date':         str(c['created_at'])[:10] if c['created_at'] else '',
         })
 
-    # Apply search filter
+    # ── Apply search & sort ───────────────────────────────────────────────────
     if search_term:
-        search_lower = search_term.lower()
-        display_data = [d for d in display_data if search_lower in d['Name'].lower()]
+        display_data = [d for d in display_data if search_term.lower() in d['Name'].lower()]
 
     if not display_data:
         st.info("No candidates match the current filters.")
         return
 
-    # Sort
     if sort_by == "Highest Score":
         display_data.sort(key=lambda x: float(x['Score']) if x['Score'] != 'N/A' else 0, reverse=True)
     elif sort_by == "Name":
         display_data.sort(key=lambda x: x['Name'])
 
-    # Display as table
+    # ── Styled DataFrame ──────────────────────────────────────────────────────
     df = pd.DataFrame(display_data)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    df_display = df.drop(columns=['ID'])           # Hide internal ID
+    styled = df_display.style.apply(_style_tier_col, subset=['Tier'])
 
-    # CSV Export + count
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.caption(f"Showing {len(display_data)} candidates")
-    with col2:
-        csv_data = df.to_csv(index=False)
-        st.download_button(
-            label="📥 Download CSV",
-            data=csv_data,
-            file_name=f"ami_pipeline_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-            mime="text/csv"
-        )
+    event = st.dataframe(
+        styled,
+        use_container_width=True,
+        hide_index=True,
+        on_select="rerun",
+        selection_mode="single-row",
+    )
 
+    # ── Row selection → navigate ──────────────────────────────────────────────
+    if event.selection and event.selection.rows:
+        row_idx = event.selection.rows[0]
+        sel = display_data[row_idx]
+        col_info, col_btn = st.columns([4, 1])
+        with col_info:
+            st.markdown(
+                f'<div class="selected-callout">'
+                f'Selected: <strong>{sel["Name"]}</strong>'
+                f' &nbsp;·&nbsp; Tier: <strong>{sel["Tier"]}</strong>'
+                f' &nbsp;·&nbsp; Score: <strong>{sel["Score"]}</strong>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+        with col_btn:
+            if st.button("👤 View Details →", type="primary", use_container_width=True):
+                st.session_state.jump_to_candidate = sel['ID']
+                st.session_state.nav_page = "👤 Candidate Details"
+                st.rerun()
+    else:
+        st.caption(f"Click a row to select it · Showing {len(display_data)} candidates")
+
+    # ── CSV Export ────────────────────────────────────────────────────────────
+    csv_data = df.to_csv(index=False)
+    st.download_button(
+        label="📥 Download CSV",
+        data=csv_data,
+        file_name=f"ami_pipeline_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+        mime="text/csv",
+    )
+
+
+# ─── Candidate Details ────────────────────────────────────────────────────────
 
 def show_candidate_details():
     """Show detailed view of a specific candidate."""
@@ -290,16 +374,34 @@ def show_candidate_details():
         st.info("No candidates in the system yet.")
         return
 
-    # Candidate selector
+    # ── Back navigation ───────────────────────────────────────────────────────
+    if st.button("← Back to Pipeline"):
+        st.session_state.jump_to_candidate = None
+        st.session_state.nav_page = "📊 Pipeline Overview"
+        st.rerun()
+
+    # ── Candidate selector ────────────────────────────────────────────────────
     candidate_options = {f"{c['name']} (ID: {c['id']})": c['id'] for c in candidates}
-    selected = st.selectbox("Select Candidate", list(candidate_options.keys()))
+    option_keys = list(candidate_options.keys())
+
+    # Pre-select from click-through navigation
+    default_idx = 0
+    jump_id = st.session_state.get('jump_to_candidate')
+    if jump_id is not None:
+        for i, (label, cid) in enumerate(candidate_options.items()):
+            if cid == jump_id:
+                default_idx = i
+                break
+        st.session_state.jump_to_candidate = None   # Consume the jump
+
+    selected = st.selectbox("Select Candidate", option_keys, index=default_idx)
     candidate_id = candidate_options[selected]
 
     candidate = get_candidate(candidate_id)
     scores = get_candidate_scores(candidate_id)
     history = get_status_history(candidate_id)
 
-    # Header
+    # ── Profile header ────────────────────────────────────────────────────────
     col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
         st.subheader(candidate['name'])
@@ -312,7 +414,7 @@ def show_candidate_details():
     with col3:
         st.metric("Role Routing", _format_routing(candidate['role_routing']))
 
-    # Status management
+    # ── Status management ─────────────────────────────────────────────────────
     st.divider()
     col1, col2 = st.columns([2, 1])
     with col1:
@@ -334,7 +436,7 @@ def show_candidate_details():
                 st.success(f"Status updated to: {_format_status(new_status)}")
                 st.rerun()
 
-    # Functional area scores
+    # ── Functional area scores ────────────────────────────────────────────────
     st.divider()
     st.subheader("Functional Area Scores")
 
@@ -394,7 +496,7 @@ def show_candidate_details():
                         else:
                             st.write(f"**Q{i}:** {q}")
 
-    # Parsed profile
+    # ── Parsed profile ────────────────────────────────────────────────────────
     st.divider()
     with st.expander("📄 Parsed Resume Profile"):
         if candidate['parsed_profile']:
@@ -403,7 +505,7 @@ def show_candidate_details():
         else:
             st.write("No parsed profile available.")
 
-    # Status history
+    # ── Status history ────────────────────────────────────────────────────────
     with st.expander("📋 Status History"):
         if history:
             for h in history:
@@ -412,20 +514,17 @@ def show_candidate_details():
         else:
             st.write("No history available.")
 
-    # Notes
+    # ── Notes ─────────────────────────────────────────────────────────────────
     st.divider()
     st.subheader("Notes")
     current_notes = candidate.get('notes', '') or ''
     new_notes = st.text_area("Add/edit notes", value=current_notes, height=100, key="candidate_notes")
     if st.button("Save Notes") and new_notes != current_notes:
-        from database import get_connection
-        conn = get_connection()
-        conn.execute("UPDATE candidates SET notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-                     (new_notes, candidate_id))
-        conn.commit()
-        conn.close()
+        update_candidate(candidate_id, notes=new_notes)
         st.success("Notes saved.")
 
+
+# ─── Analytics ────────────────────────────────────────────────────────────────
 
 def show_analytics():
     """Show pipeline analytics and funnel visualization."""
@@ -475,7 +574,6 @@ def show_analytics():
         area_dist = get_area_distribution()
         if area_dist:
             area_df = pd.DataFrame(area_dist)
-            # Pivot to show areas as rows, tiers as columns
             try:
                 pivot = area_df.pivot_table(index='functional_area', columns='tier', values='count', fill_value=0)
                 st.dataframe(pivot, use_container_width=True)
@@ -530,6 +628,8 @@ def _avg_areas_scored():
     conn.close()
     return row[0] if row[0] else 0
 
+
+# ─── Eliminated Review ────────────────────────────────────────────────────────
 
 def show_eliminated_review():
     """Show eliminated candidates for review and feedback."""
@@ -594,6 +694,8 @@ def show_eliminated_review():
                         st.warning("Please enter feedback text.")
 
 
+# ─── Rubric Feedback ──────────────────────────────────────────────────────────
+
 def show_rubric_feedback():
     """Show accumulated rubric feedback."""
     st.subheader("📝 Rubric Feedback Queue")
@@ -619,6 +721,8 @@ def show_rubric_feedback():
                 st.success("Marked as resolved.")
                 st.rerun()
 
+
+# ─── Handoff Email Generator ──────────────────────────────────────────────────
 
 def show_handoff_generator():
     """Generate handoff emails for candidates who passed phone screen."""
@@ -647,6 +751,8 @@ def show_handoff_generator():
                 st.success(f"Marked as handed off.")
                 st.rerun()
 
+
+# ─── System Status ────────────────────────────────────────────────────────────
 
 def show_system_status():
     """Show system status and failed resume management."""
@@ -720,21 +826,23 @@ def show_system_status():
         st.caption("Logs directory not created yet (will be created when pipeline runs).")
 
 
+# ─── Formatters ───────────────────────────────────────────────────────────────
+
 def _format_status(status):
     """Format status for display."""
     status_labels = {
-        'processing': '⏳ Processing',
-        'scored_high': '🟢 Scored — High',
-        'scored_medium': '🟡 Scored — Medium',
-        'scored_low': '🟠 Scored — Low',
+        'processing':                '⏳ Processing',
+        'scored_high':               '🟢 Scored — High',
+        'scored_medium':             '🟡 Scored — Medium',
+        'scored_low':                '🟠 Scored — Low',
         'eliminated_pending_review': '🔴 Eliminated — Pending Review',
-        'eliminated_confirmed': '❌ Eliminated — Confirmed',
-        'phone_screen_scheduled': '📅 Phone Screen Scheduled',
-        'phone_screen_pass_senior': '✅ Passed — Senior',
+        'eliminated_confirmed':      '❌ Eliminated — Confirmed',
+        'phone_screen_scheduled':    '📅 Phone Screen Scheduled',
+        'phone_screen_pass_senior':  '✅ Passed — Senior',
         'phone_screen_pass_manager': '✅ Passed — Manager',
-        'phone_screen_reject': '❌ Phone Screen — Rejected',
-        'handed_off': '🏁 Handed Off',
-        'error': '⚠️ Error'
+        'phone_screen_reject':       '❌ Phone Screen — Rejected',
+        'handed_off':                '🏁 Handed Off',
+        'error':                     '⚠️ Error',
     }
     return status_labels.get(status, status)
 
@@ -742,10 +850,10 @@ def _format_status(status):
 def _format_routing(routing):
     """Format role routing for display."""
     routing_labels = {
-        'senior_only': 'Senior',
-        'senior_plus_manager_flag': 'Senior + Mgr Flag',
-        'manager_only': 'Manager',
-        'eliminated': 'Eliminated'
+        'senior_only':               'Senior',
+        'senior_plus_manager_flag':  'Senior + Mgr Flag',
+        'manager_only':              'Manager',
+        'eliminated':                'Eliminated',
     }
     return routing_labels.get(routing, routing or 'N/A')
 
