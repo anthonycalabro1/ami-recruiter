@@ -178,6 +178,12 @@ def main():
     if 'jump_to_candidate' not in st.session_state:
         st.session_state.jump_to_candidate = None
 
+    # Apply any programmatic page switch BEFORE the radio widget renders.
+    # We can't set a widget-bound key after its widget has rendered, so we
+    # stage the target in _requested_page and apply it here at the top.
+    if '_requested_page' in st.session_state:
+        st.session_state.nav_page = st.session_state.pop('_requested_page')
+
     # ── Header ────────────────────────────────────────────────────────────────
     st.markdown("""
     <div class="main-header">
@@ -188,7 +194,6 @@ def main():
 
     # ── Sidebar navigation ────────────────────────────────────────────────────
     st.sidebar.title("Navigation")
-    # key="nav_page" lets us programmatically switch pages via session state
     page = st.sidebar.radio("Go to", NAV_PAGES, key="nav_page")
 
     # Auto-refresh control
@@ -349,7 +354,7 @@ def show_pipeline_overview():
         with col_btn:
             if st.button("👤 View Details →", type="primary", use_container_width=True):
                 st.session_state.jump_to_candidate = sel['ID']
-                st.session_state.nav_page = "👤 Candidate Details"
+                st.session_state._requested_page = "👤 Candidate Details"
                 st.rerun()
     else:
         st.caption(f"Click a row to select it · Showing {len(display_data)} candidates")
@@ -377,7 +382,7 @@ def show_candidate_details():
     # ── Back navigation ───────────────────────────────────────────────────────
     if st.button("← Back to Pipeline"):
         st.session_state.jump_to_candidate = None
-        st.session_state.nav_page = "📊 Pipeline Overview"
+        st.session_state._requested_page = "📊 Pipeline Overview"
         st.rerun()
 
     # ── Candidate selector ────────────────────────────────────────────────────
