@@ -425,15 +425,20 @@ def show_candidate_details():
     with col1:
         st.write(f"**Current Status:** {_format_status(candidate['status'])}")
     with col2:
-        new_status = st.selectbox("Update Status", [
-            candidate['status'],
-            "phone_screen_scheduled",
-            "phone_screen_pass_senior",
-            "phone_screen_pass_manager",
-            "phone_screen_reject",
+        _ALL_STATUSES = [
+            "scored_high", "scored_medium", "scored_low",
+            "phone_screen_scheduled", "phone_screen_pass_senior",
+            "phone_screen_pass_manager", "phone_screen_reject",
             "handed_off",
-            "eliminated_confirmed"
-        ], key="status_update")
+            "eliminated_pending_review", "eliminated_confirmed",
+            "processing",
+        ]
+        if candidate['status'] not in _ALL_STATUSES:
+            _ALL_STATUSES = [candidate['status']] + _ALL_STATUSES
+        _cur_idx = _ALL_STATUSES.index(candidate['status'])
+        _status_display = [_format_status(s) for s in _ALL_STATUSES]
+        _selected = st.selectbox("Update Status", _status_display, index=_cur_idx, key="status_update")
+        new_status = _ALL_STATUSES[_status_display.index(_selected)]
         if new_status != candidate['status']:
             notes = st.text_input("Notes (optional)", key="status_notes")
             if st.button("Update Status"):
