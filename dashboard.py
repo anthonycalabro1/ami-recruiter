@@ -51,13 +51,13 @@ _TIER_CELL_STYLE = {
 }
 
 NAV_PAGES = [
-    "01  Pipeline Overview",
-    "02  Candidate Details",
-    "03  Analytics",
-    "04  Eliminated Review",
-    "05  Rubric Feedback",
-    "06  Handoff Emails",
-    "07  System",
+    "01 · Pipeline Overview",
+    "02 · Candidate Details",
+    "03 · Analytics",
+    "04 · Eliminated Review",
+    "05 · Rubric Feedback",
+    "06 · Handoff Emails",
+    "07 · System",
 ]
 
 
@@ -94,8 +94,13 @@ if DB_INIT_ERROR:
 
 
 # ─── Custom CSS ───────────────────────────────────────────────────────────────
+# Google Fonts — loaded separately so Streamlit doesn't strip the <link> tag
+st.markdown(
+    '<style>@import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=IBM+Plex+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap");</style>',
+    unsafe_allow_html=True,
+)
+
 st.markdown("""
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=IBM+Plex+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 /* ── Design tokens ──────────────────────────────────────────────────────────── */
 :root {
@@ -648,19 +653,19 @@ def main():
         st.sidebar.caption("No activity yet.")
 
     # ── Page routing ──────────────────────────────────────────────────────────
-    if page == "01  Pipeline Overview":
+    if page == "01 · Pipeline Overview":
         show_pipeline_overview()
-    elif page == "02  Candidate Details":
+    elif page == "02 · Candidate Details":
         show_candidate_details()
-    elif page == "03  Analytics":
+    elif page == "03 · Analytics":
         show_analytics()
-    elif page == "04  Eliminated Review":
+    elif page == "04 · Eliminated Review":
         show_eliminated_review()
-    elif page == "05  Rubric Feedback":
+    elif page == "05 · Rubric Feedback":
         show_rubric_feedback()
-    elif page == "06  Handoff Emails":
+    elif page == "06 · Handoff Emails":
         show_handoff_generator()
-    elif page == "07  System":
+    elif page == "07 · System":
         show_system_status()
 
 
@@ -800,7 +805,7 @@ def show_pipeline_overview():
         with col_btn:
             if st.button("👤 View Details →", type="primary", use_container_width=True):
                 st.session_state.jump_to_candidate = sel['ID']
-                st.session_state._requested_page = "02  Candidate Details"
+                st.session_state._requested_page = "02 · Candidate Details"
                 st.rerun()
     else:
         st.caption(f"Click a row to select it · Showing {len(display_data)} candidates")
@@ -828,7 +833,7 @@ def show_candidate_details():
     # ── Back navigation ───────────────────────────────────────────────────────
     if st.button("← Back to Pipeline"):
         st.session_state.jump_to_candidate = None
-        st.session_state._requested_page = "01  Pipeline Overview"
+        st.session_state._requested_page = "01 · Pipeline Overview"
         st.rerun()
 
     # ── Candidate selector ────────────────────────────────────────────────────
