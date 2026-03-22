@@ -43,21 +43,21 @@ STATUS_FILTER_OPTIONS = {
 }
 
 _TIER_CELL_STYLE = {
-    'HIGH':       'background-color: #1B7A2F; color: white; font-weight: bold;',
-    'MEDIUM':     'background-color: #CC7A00; color: white; font-weight: bold;',
-    'LOW':        'background-color: #CC4400; color: white; font-weight: bold;',
-    'ELIMINATED': 'background-color: #CC0000; color: white; font-weight: bold;',
-    'N/A':        'background-color: #3a3a3a; color: #aaa;  font-weight: bold;',
+    'HIGH':       'background-color: #2D8A4E; color: white; font-weight: bold;',
+    'MEDIUM':     'background-color: #C4841D; color: white; font-weight: bold;',
+    'LOW':        'background-color: #B85C3A; color: white; font-weight: bold;',
+    'ELIMINATED': 'background-color: #A63D40; color: white; font-weight: bold;',
+    'N/A':        'background-color: #2a2a2e; color: #7A756E; font-weight: bold;',
 }
 
 NAV_PAGES = [
-    "📊 Pipeline Overview",
-    "👤 Candidate Details",
-    "📈 Analytics",
-    "🔍 Eliminated Review",
-    "📝 Rubric Feedback",
-    "📧 Handoff Email Generator",
-    "⚙️ System",
+    "01  Pipeline Overview",
+    "02  Candidate Details",
+    "03  Analytics",
+    "04  Eliminated Review",
+    "05  Rubric Feedback",
+    "06  Handoff Emails",
+    "07  System",
 ]
 
 
@@ -95,64 +95,488 @@ if DB_INIT_ERROR:
 
 # ─── Custom CSS ───────────────────────────────────────────────────────────────
 st.markdown("""
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=IBM+Plex+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 /* ── Design tokens ──────────────────────────────────────────────────────────── */
 :root {
-    --primary:    #2E75B6;
-    --primary-dk: #1B3A5C;
-    --success:    #1B7A2F;
-    --warning:    #CC7A00;
-    --danger-lt:  #CC4400;
-    --danger:     #CC0000;
-    --border:     rgba(255,255,255,0.08);
-    --text-muted: #8fa3b8;
+    --primary:      #C4841D;
+    --primary-dk:   #1A1A1E;
+    --bg:           #121215;
+    --bg-card:      #1E1E23;
+    --success:      #2D8A4E;
+    --warning:      #C4841D;
+    --danger-lt:    #B85C3A;
+    --danger:       #A63D40;
+    --border:       rgba(255,255,255,0.06);
+    --text:         #E8E4DE;
+    --text-muted:   #7A756E;
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --font-body:    'IBM Plex Sans', -apple-system, sans-serif;
+    --font-mono:    'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ── Global overrides ──────────────────────────────────────────────────────── */
+html, body, [data-testid="stAppViewContainer"], .main .block-container {
+    font-family: var(--font-body) !important;
+    color: var(--text);
+}
+h1, h2, h3 { font-family: var(--font-display) !important; font-weight: 400 !important; letter-spacing: -0.5px; }
+code, .stCode, [data-testid="stMetricValue"] { font-family: var(--font-mono) !important; }
+
+/* ── Stagger fade-in animation ─────────────────────────────────────────────── */
+@keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes subtlePulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.7; }
 }
 
 /* ── Header ─────────────────────────────────────────────────────────────────── */
 .main-header {
-    background: linear-gradient(135deg, #1B3A5C 0%, #2E75B6 100%);
-    color: white;
-    padding: 22px 30px;
-    border-radius: 12px;
-    margin-bottom: 24px;
-    border: 1px solid rgba(255,255,255,0.08);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    background: var(--primary-dk);
+    color: var(--text);
+    padding: 28px 0 20px 0;
+    margin-bottom: 8px;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    animation: fadeSlideUp 0.6s ease-out;
 }
 .main-header h1 {
     margin: 0;
-    font-size: 26px;
+    font-family: var(--font-display) !important;
+    font-size: 38px;
+    font-weight: 400;
+    letter-spacing: -1px;
+    color: var(--text);
+}
+.main-header .header-subtitle {
+    margin: 6px 0 0 0;
+    font-family: var(--font-mono) !important;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--text-muted);
+}
+.header-accent {
+    width: 64px;
+    height: 2px;
+    background: var(--primary);
+    margin-top: 16px;
+    border-radius: 1px;
+}
+
+/* ── Metric tiles ──────────────────────────────────────────────────────────── */
+.metric-strip {
+    display: flex;
+    gap: 0;
+    margin: 8px 0 20px 0;
+    animation: fadeSlideUp 0.6s ease-out 0.1s both;
+}
+.metric-tile {
+    flex: 1;
+    padding: 18px 16px;
+    border-right: 1px solid var(--border);
+    position: relative;
+    transition: background 0.2s ease;
+}
+.metric-tile:hover { background: rgba(255,255,255,0.02); }
+.metric-tile:last-child { border-right: none; }
+.metric-tile .metric-value {
+    font-family: var(--font-mono) !important;
+    font-size: 36px;
     font-weight: 700;
-    letter-spacing: -0.3px;
+    line-height: 1;
+    margin-bottom: 6px;
+    color: var(--text);
 }
-.main-header p {
-    margin: 5px 0 0 0;
-    opacity: 0.75;
-    font-size: 14px;
+.metric-tile .metric-label {
+    font-family: var(--font-body) !important;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    font-weight: 500;
 }
+.metric-tile.accent-success { border-left: 2px solid var(--success); }
+.metric-tile.accent-warning { border-left: 2px solid var(--warning); }
+.metric-tile.accent-danger-lt { border-left: 2px solid var(--danger-lt); }
+.metric-tile.accent-danger { border-left: 2px solid var(--danger); }
+.metric-tile.accent-primary { border-left: 2px solid var(--primary); }
 
-/* ── Tier badges (used in expander headers & candidate detail) ───────────────── */
-.tier-high       { background: #1B7A2F; color: white; padding: 3px 11px; border-radius: 5px; font-weight: 700; font-size: 12px; white-space: nowrap; display: inline-block; }
-.tier-medium     { background: #CC7A00; color: white; padding: 3px 11px; border-radius: 5px; font-weight: 700; font-size: 12px; white-space: nowrap; display: inline-block; }
-.tier-low        { background: #CC4400; color: white; padding: 3px 11px; border-radius: 5px; font-weight: 700; font-size: 12px; white-space: nowrap; display: inline-block; }
-.tier-eliminated { background: #CC0000; color: white; padding: 3px 11px; border-radius: 5px; font-weight: 700; font-size: 12px; white-space: nowrap; display: inline-block; }
+/* ── Tier badges ───────────────────────────────────────────────────────────── */
+.tier-high       { background: var(--success); color: white; padding: 2px 10px; border-radius: 3px; font-family: var(--font-mono); font-weight: 500; font-size: 11px; letter-spacing: 0.5px; white-space: nowrap; display: inline-block; }
+.tier-medium     { background: var(--warning); color: white; padding: 2px 10px; border-radius: 3px; font-family: var(--font-mono); font-weight: 500; font-size: 11px; letter-spacing: 0.5px; white-space: nowrap; display: inline-block; }
+.tier-low        { background: var(--danger-lt); color: white; padding: 2px 10px; border-radius: 3px; font-family: var(--font-mono); font-weight: 500; font-size: 11px; letter-spacing: 0.5px; white-space: nowrap; display: inline-block; }
+.tier-eliminated { background: var(--danger); color: white; padding: 2px 10px; border-radius: 3px; font-family: var(--font-mono); font-weight: 500; font-size: 11px; letter-spacing: 0.5px; white-space: nowrap; display: inline-block; }
 
-/* ── Selected-row callout ───────────────────────────────────────────────────── */
+/* ── Selected-row callout ──────────────────────────────────────────────────── */
 .selected-callout {
-    background: linear-gradient(90deg, rgba(46,117,182,0.14), transparent);
-    border-left: 3px solid #2E75B6;
-    padding: 10px 16px;
-    border-radius: 0 8px 8px 0;
+    background: linear-gradient(90deg, rgba(196,132,29,0.08), transparent);
+    border-left: 2px solid var(--primary);
+    padding: 12px 18px;
+    border-radius: 0 4px 4px 0;
     margin: 4px 0 10px 0;
     font-size: 14px;
+    font-family: var(--font-body);
+    animation: fadeSlideUp 0.3s ease-out;
+}
+
+/* ── Sidebar styling ───────────────────────────────────────────────────────── */
+[data-testid="stSidebar"] {
+    background: #16161A !important;
+    border-right: 1px solid var(--border) !important;
+}
+[data-testid="stSidebar"] .stRadio > label {
+    font-family: var(--font-mono) !important;
+    font-size: 10px !important;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-muted) !important;
+    margin-bottom: 8px;
+}
+[data-testid="stSidebar"] .stRadio [role="radiogroup"] label {
+    padding: 8px 12px !important;
+    border-radius: 4px;
+    margin: 1px 0;
+    transition: all 0.2s ease;
+    border-left: 2px solid transparent;
+    font-family: var(--font-body) !important;
+    font-size: 13px !important;
+}
+[data-testid="stSidebar"] .stRadio [role="radiogroup"] label:hover {
+    background: rgba(196,132,29,0.06) !important;
+    border-left-color: rgba(196,132,29,0.3);
+}
+[data-testid="stSidebar"] .stRadio [role="radiogroup"] label[data-checked="true"],
+[data-testid="stSidebar"] .stRadio [role="radiogroup"] label:has(input:checked) {
+    background: rgba(196,132,29,0.10) !important;
+    border-left-color: var(--primary) !important;
+    color: var(--text) !important;
+}
+[data-testid="stSidebar"] [data-testid="stCaption"] {
+    font-family: var(--font-body) !important;
+    font-size: 12px !important;
+    border-left: 1px solid rgba(196,132,29,0.2);
+    padding-left: 10px;
+    margin: 4px 0;
+}
+
+/* ── Profile card ──────────────────────────────────────────────────────────── */
+.profile-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 20px;
+    animation: fadeSlideUp 0.5s ease-out;
+}
+.profile-initials {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: var(--primary-dk);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display) !important;
+    font-size: 24px;
+    font-weight: 400;
+    flex-shrink: 0;
+}
+.profile-info { flex: 1; }
+.profile-info h2 {
+    font-family: var(--font-display) !important;
+    font-size: 28px;
+    margin: 0 0 6px 0;
+    font-weight: 400;
+    color: var(--text);
+}
+.profile-contact {
+    font-family: var(--font-mono) !important;
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.profile-contact span { white-space: nowrap; }
+.profile-stats {
+    display: flex;
+    gap: 32px;
+    flex-shrink: 0;
+    align-self: center;
+}
+.profile-stat {
+    text-align: right;
+}
+.profile-stat .stat-value {
+    font-family: var(--font-mono) !important;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+}
+.profile-stat .stat-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* ── Score gauge blocks ────────────────────────────────────────────────────── */
+.score-gauge {
+    display: inline-flex;
+    gap: 3px;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+.score-gauge .gauge-block {
+    width: 14px;
+    height: 10px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.08);
+    transition: transform 0.15s ease;
+}
+.score-gauge .gauge-block.filled { background: var(--primary); }
+.score-gauge .gauge-block.filled.s5 { background: var(--success); }
+.score-gauge .gauge-block.filled.s4 { background: #5BA86C; }
+.score-gauge .gauge-block.filled.s3 { background: var(--warning); }
+.score-gauge .gauge-block.filled.s2 { background: var(--danger-lt); }
+.score-gauge .gauge-block.filled.s1 { background: var(--danger); }
+.score-gauge:hover .gauge-block { transform: scaleY(1.3); }
+
+/* ── Gate chips ────────────────────────────────────────────────────────────── */
+.gate-row {
+    display: flex;
+    gap: 8px;
+    margin: 8px 0 16px 0;
+}
+.gate-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    border-radius: 3px;
+    font-family: var(--font-mono) !important;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+.gate-chip.pass {
+    background: rgba(45,138,78,0.15);
+    color: var(--success);
+    border: 1px solid rgba(45,138,78,0.25);
+}
+.gate-chip.fail {
+    background: rgba(166,61,64,0.15);
+    color: var(--danger);
+    border: 1px solid rgba(166,61,64,0.25);
+}
+
+/* ── Phone screen question cards ───────────────────────────────────────────── */
+.q-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    margin: 10px 0;
+}
+.q-card .q-number {
+    font-family: var(--font-mono) !important;
+    font-size: 10px;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
+}
+.q-card .q-text {
+    font-family: var(--font-body) !important;
+    font-size: 15px;
+    color: var(--text);
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+.q-card .q-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+.q-card .q-meta .q-tag {
+    display: inline-block;
+    background: rgba(196,132,29,0.12);
+    color: var(--primary);
+    padding: 1px 8px;
+    border-radius: 3px;
+    font-family: var(--font-mono) !important;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    margin-right: 6px;
+}
+.q-card .q-redflag {
+    font-size: 12px;
+    color: var(--danger);
+    margin-top: 6px;
+    padding-left: 10px;
+    border-left: 2px solid rgba(166,61,64,0.3);
+}
+
+/* ── Funnel visualization ──────────────────────────────────────────────────── */
+.funnel-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin: 20px 0;
+    animation: fadeSlideUp 0.6s ease-out 0.15s both;
+}
+.funnel-row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 16px;
+}
+.funnel-label {
+    width: 180px;
+    text-align: right;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+.funnel-bar-wrap {
+    flex: 1;
+    height: 36px;
+    display: flex;
+    align-items: center;
+}
+.funnel-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), rgba(196,132,29,0.6));
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 12px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    min-width: 48px;
+    transition: width 0.8s ease-out;
 }
 
 /* ── Tabs ───────────────────────────────────────────────────────────────────── */
-.stTabs [data-baseweb="tab-list"] { gap: 4px; }
+.stTabs [data-baseweb="tab-list"] { gap: 2px; border-bottom: 1px solid var(--border); }
 .stTabs [data-baseweb="tab"] {
-    padding: 8px 18px;
-    border-radius: 6px 6px 0 0;
+    padding: 10px 20px;
+    border-radius: 4px 4px 0 0;
+    font-family: var(--font-body) !important;
     font-weight: 500;
-    font-size: 14px;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+    transition: all 0.2s ease;
+}
+.stTabs [data-baseweb="tab"]:hover { background: rgba(196,132,29,0.06); }
+
+/* ── Section headers ───────────────────────────────────────────────────────── */
+.section-label {
+    font-family: var(--font-mono) !important;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--text-muted);
+    margin: 28px 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+/* ── Empty state ───────────────────────────────────────────────────────────── */
+.empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-muted);
+    animation: fadeSlideUp 0.5s ease-out;
+}
+.empty-state .empty-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+    opacity: 0.4;
+}
+.empty-state .empty-title {
+    font-family: var(--font-display) !important;
+    font-size: 20px;
+    color: var(--text);
+    margin-bottom: 6px;
+}
+.empty-state .empty-desc {
+    font-size: 13px;
+    max-width: 400px;
+    margin: 0 auto;
+    line-height: 1.5;
+}
+
+/* ── Button refinements ────────────────────────────────────────────────────── */
+.stButton > button[kind="primary"],
+.stButton > button[data-testid="stBaseButton-primary"] {
+    background: var(--primary) !important;
+    border: none !important;
+    font-family: var(--font-body) !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.3px;
+    transition: all 0.2s ease !important;
+}
+.stButton > button[kind="primary"]:hover,
+.stButton > button[data-testid="stBaseButton-primary"]:hover {
+    background: #D4941D !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(196,132,29,0.25) !important;
+}
+.stButton > button[kind="secondary"],
+.stButton > button[data-testid="stBaseButton-secondary"] {
+    font-family: var(--font-body) !important;
+    font-weight: 500 !important;
+    border-color: var(--border) !important;
+    transition: all 0.2s ease !important;
+}
+.stButton > button[kind="secondary"]:hover,
+.stButton > button[data-testid="stBaseButton-secondary"]:hover {
+    border-color: rgba(196,132,29,0.4) !important;
+    color: var(--primary) !important;
+}
+/* Danger button style via custom class */
+.danger-btn button {
+    background: var(--danger) !important;
+    border: none !important;
+    color: white !important;
+}
+.danger-btn button:hover {
+    background: #BF4548 !important;
+}
+
+/* ── DataTable refinements ─────────────────────────────────────────────────── */
+[data-testid="stDataFrame"] {
+    animation: fadeSlideUp 0.5s ease-out 0.2s both;
+}
+[data-testid="stDataFrame"] th {
+    font-family: var(--font-mono) !important;
+    font-size: 10px !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* ── Expander refinements ──────────────────────────────────────────────────── */
+[data-testid="stExpander"] {
+    border: 1px solid var(--border) !important;
+    border-radius: 6px !important;
+    margin-bottom: 8px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -187,14 +611,15 @@ def main():
     # ── Header ────────────────────────────────────────────────────────────────
     st.markdown("""
     <div class="main-header">
-        <h1>🎯 AMI Recruiting Dashboard</h1>
-        <p>Candidate Pipeline Management</p>
+        <h1>AMI Recruiting</h1>
+        <div class="header-subtitle">Candidate Pipeline Management</div>
+        <div class="header-accent"></div>
     </div>
     """, unsafe_allow_html=True)
 
     # ── Sidebar navigation ────────────────────────────────────────────────────
-    st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", NAV_PAGES, key="nav_page")
+    st.sidebar.markdown('<div class="section-label">Navigation</div>', unsafe_allow_html=True)
+    page = st.sidebar.radio("Go to", NAV_PAGES, key="nav_page", label_visibility="collapsed")
 
     # Auto-refresh control
     st.sidebar.divider()
@@ -211,7 +636,7 @@ def main():
 
     # Recent Activity feed
     st.sidebar.divider()
-    st.sidebar.subheader("Recent Activity")
+    st.sidebar.markdown('<div class="section-label">Recent Activity</div>', unsafe_allow_html=True)
     activity = get_recent_activity(5)
     if activity:
         for a in activity:
@@ -223,19 +648,19 @@ def main():
         st.sidebar.caption("No activity yet.")
 
     # ── Page routing ──────────────────────────────────────────────────────────
-    if page == "📊 Pipeline Overview":
+    if page == "01  Pipeline Overview":
         show_pipeline_overview()
-    elif page == "👤 Candidate Details":
+    elif page == "02  Candidate Details":
         show_candidate_details()
-    elif page == "📈 Analytics":
+    elif page == "03  Analytics":
         show_analytics()
-    elif page == "🔍 Eliminated Review":
+    elif page == "04  Eliminated Review":
         show_eliminated_review()
-    elif page == "📝 Rubric Feedback":
+    elif page == "05  Rubric Feedback":
         show_rubric_feedback()
-    elif page == "📧 Handoff Email Generator":
+    elif page == "06  Handoff Emails":
         show_handoff_generator()
-    elif page == "⚙️ System":
+    elif page == "07  System":
         show_system_status()
 
 
@@ -246,23 +671,38 @@ def show_pipeline_overview():
     stats = get_dashboard_stats()
 
     # ── Metrics row ───────────────────────────────────────────────────────────
-    col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
-    with col1:
-        st.metric("Total", stats['total_candidates'])
-    with col2:
-        st.metric("Processing", stats['processing'])
-    with col3:
-        st.metric("🟢 High", stats['high'])
-    with col4:
-        st.metric("🟡 Medium", stats['medium'])
-    with col5:
-        st.metric("🟠 Low", stats['low'])
-    with col6:
-        st.metric("🔴 Eliminated", stats['eliminated'])
-    with col7:
-        st.metric("✅ Handed Off", stats['handed_off'])
-
-    st.divider()
+    st.markdown(f"""
+    <div class="metric-strip">
+        <div class="metric-tile">
+            <div class="metric-value">{stats['total_candidates']}</div>
+            <div class="metric-label">Total</div>
+        </div>
+        <div class="metric-tile">
+            <div class="metric-value">{stats['processing']}</div>
+            <div class="metric-label">Processing</div>
+        </div>
+        <div class="metric-tile accent-success">
+            <div class="metric-value">{stats['high']}</div>
+            <div class="metric-label">High Tier</div>
+        </div>
+        <div class="metric-tile accent-warning">
+            <div class="metric-value">{stats['medium']}</div>
+            <div class="metric-label">Medium Tier</div>
+        </div>
+        <div class="metric-tile accent-danger-lt">
+            <div class="metric-value">{stats['low']}</div>
+            <div class="metric-label">Low Tier</div>
+        </div>
+        <div class="metric-tile accent-danger">
+            <div class="metric-value">{stats['eliminated']}</div>
+            <div class="metric-label">Eliminated</div>
+        </div>
+        <div class="metric-tile accent-primary">
+            <div class="metric-value">{stats['handed_off']}</div>
+            <div class="metric-label">Handed Off</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     # ── Search & Filters ──────────────────────────────────────────────────────
     search_term = st.text_input("🔍 Search by candidate name", "", key="search")
@@ -283,7 +723,13 @@ def show_pipeline_overview():
     candidates = get_all_candidates(status_filter) if status_filter else get_all_candidates()
 
     if not candidates:
-        st.info("No candidates found. Drop resumes into the AMI_Candidates_Inbox folder to get started.")
+        st.markdown("""
+        <div class="empty-state">
+            <div class="empty-icon">&#9634;</div>
+            <div class="empty-title">No candidates yet</div>
+            <div class="empty-desc">Drop resumes into the AMI_Candidates_Inbox folder to start building your pipeline.</div>
+        </div>
+        """, unsafe_allow_html=True)
         return
 
     # ── Build display data ────────────────────────────────────────────────────
@@ -354,7 +800,7 @@ def show_pipeline_overview():
         with col_btn:
             if st.button("👤 View Details →", type="primary", use_container_width=True):
                 st.session_state.jump_to_candidate = sel['ID']
-                st.session_state._requested_page = "👤 Candidate Details"
+                st.session_state._requested_page = "02  Candidate Details"
                 st.rerun()
     else:
         st.caption(f"Click a row to select it · Showing {len(display_data)} candidates")
@@ -382,7 +828,7 @@ def show_candidate_details():
     # ── Back navigation ───────────────────────────────────────────────────────
     if st.button("← Back to Pipeline"):
         st.session_state.jump_to_candidate = None
-        st.session_state._requested_page = "📊 Pipeline Overview"
+        st.session_state._requested_page = "01  Pipeline Overview"
         st.rerun()
 
     # ── Candidate selector ────────────────────────────────────────────────────
@@ -407,17 +853,38 @@ def show_candidate_details():
     history = get_status_history(candidate_id)
 
     # ── Profile header ────────────────────────────────────────────────────────
-    col1, col2, col3 = st.columns([2, 1, 1])
-    with col1:
-        st.subheader(candidate['name'])
-        if candidate['email']:
-            st.write(f"📧 {candidate['email']}")
-        if candidate['phone']:
-            st.write(f"📱 {candidate['phone']}")
-    with col2:
-        st.metric("AMI Years", candidate['total_ami_years'] or 'N/A')
-    with col3:
-        st.metric("Role Routing", _format_routing(candidate['role_routing']))
+    _name = candidate['name'] or 'Unknown'
+    _initials = ''.join(w[0] for w in _name.split()[:2]).upper() if _name else '?'
+    _email = candidate.get('email') or ''
+    _phone = candidate.get('phone') or ''
+    _contact_parts = []
+    if _email:
+        _contact_parts.append(f'<span>{_email}</span>')
+    if _phone:
+        _contact_parts.append(f'<span>{_phone}</span>')
+    _contact_html = ' &nbsp;|&nbsp; '.join(_contact_parts) if _contact_parts else '<span>No contact info</span>'
+    _ami_yrs = candidate['total_ami_years'] if candidate['total_ami_years'] is not None else 'N/A'
+    _routing = _format_routing(candidate['role_routing'])
+
+    st.markdown(f"""
+    <div class="profile-card">
+        <div class="profile-initials">{_initials}</div>
+        <div class="profile-info">
+            <h2>{_name}</h2>
+            <div class="profile-contact">{_contact_html}</div>
+        </div>
+        <div class="profile-stats">
+            <div class="profile-stat">
+                <div class="stat-value">{_ami_yrs}</div>
+                <div class="stat-label">AMI Years</div>
+            </div>
+            <div class="profile-stat">
+                <div class="stat-value" style="font-size:20px;">{_routing}</div>
+                <div class="stat-label">Role Routing</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     # ── Status management ─────────────────────────────────────────────────────
     st.divider()
@@ -448,61 +915,94 @@ def show_candidate_details():
 
     # ── Functional area scores ────────────────────────────────────────────────
     st.divider()
-    st.subheader("Functional Area Scores")
+    st.markdown('<div class="section-label">Functional Area Scores</div>', unsafe_allow_html=True)
 
     if not scores:
-        st.warning("No scores available yet.")
+        st.markdown("""
+        <div class="empty-state">
+            <div class="empty-icon">&#9673;</div>
+            <div class="empty-title">No scores yet</div>
+            <div class="empty-desc">Scores will appear here once the pipeline finishes processing this candidate.</div>
+        </div>
+        """, unsafe_allow_html=True)
     else:
         for score in scores:
             tier = score['tier'] or 'N/A'
+            ws = score['weighted_score'] or 0
             with st.expander(
-                f"{'🟢' if tier == 'HIGH' else '🟡' if tier == 'MEDIUM' else '🟠' if tier == 'LOW' else '🔴'} "
-                f"{score['functional_area']} — {tier} ({score['weighted_score']:.2f})"
-                + (" ⭐ Manager Stretch" if score['manager_stretch_flag'] else ""),
+                f"{score['functional_area']} — {tier} ({ws:.2f})"
+                + (" — Manager Stretch" if score['manager_stretch_flag'] else ""),
                 expanded=(tier == 'HIGH')
             ):
-                # Gate results
-                st.write("**Gate Results:**")
-                gate_col1, gate_col2, gate_col3 = st.columns(3)
-                with gate_col1:
-                    g1 = "✅" if score['gate1_pass'] else "❌"
-                    st.write(f"{g1} Gate 1 (AMI Experience): {score['gate1_reason'] or ''}")
-                with gate_col2:
-                    g2 = "✅" if score['gate2_pass'] else "❌"
-                    st.write(f"{g2} Gate 2 (AMI Years): {score['gate2_reason'] or ''}")
-                with gate_col3:
-                    g3 = "✅" if score.get('gate3_pass') else "❌"
-                    st.write(f"{g3} Gate 3: {score.get('gate3_reason', '')}")
+                # Gate results as chips
+                g1_cls = "pass" if score['gate1_pass'] else "fail"
+                g2_cls = "pass" if score['gate2_pass'] else "fail"
+                g3_cls = "pass" if score.get('gate3_pass') else "fail"
+                g1_icon = "&#10003;" if score['gate1_pass'] else "&#10007;"
+                g2_icon = "&#10003;" if score['gate2_pass'] else "&#10007;"
+                g3_icon = "&#10003;" if score.get('gate3_pass') else "&#10007;"
+                st.markdown(f"""
+                <div class="gate-row">
+                    <span class="gate-chip {g1_cls}">{g1_icon} G1 AMI Experience</span>
+                    <span class="gate-chip {g2_cls}">{g2_icon} G2 AMI Years</span>
+                    <span class="gate-chip {g3_cls}">{g3_icon} G3 Area Match</span>
+                </div>
+                """, unsafe_allow_html=True)
 
-                # Dimension scores
+                # Dimension scores with gauge blocks
                 if score['dimension_scores']:
-                    st.write("**Dimension Scores:**")
+                    st.markdown('<div class="section-label">Dimensions</div>', unsafe_allow_html=True)
                     dim_scores = json.loads(score['dimension_scores']) if isinstance(score['dimension_scores'], str) else score['dimension_scores']
                     for dim_name, dim_data in dim_scores.items():
                         if isinstance(dim_data, dict):
-                            s = dim_data.get('score', 'N/A')
+                            s = dim_data.get('score', 0)
                             r = dim_data.get('reasoning', '')
-                            st.write(f"- **{dim_name}**: {s}/5 — {r}")
+                            try:
+                                s_int = int(float(s))
+                            except (ValueError, TypeError):
+                                s_int = 0
+                            blocks = ''.join(
+                                f'<span class="gauge-block {"filled s" + str(s_int) if i < s_int else ""}"></span>'
+                                for i in range(5)
+                            )
+                            st.markdown(
+                                f'**{dim_name}** <span style="font-family:var(--font-mono);color:var(--text-muted);font-size:12px;">{s}/5</span>'
+                                f' <span class="score-gauge">{blocks}</span>',
+                                unsafe_allow_html=True,
+                            )
+                            if r:
+                                st.caption(r)
 
                 # Narrative
-                st.write("**Assessment:**")
+                st.markdown('<div class="section-label">Assessment</div>', unsafe_allow_html=True)
                 st.write(score['scoring_narrative'] or 'No narrative available.')
 
                 # Manager stretch
                 if score['manager_stretch_flag']:
-                    st.info(f"⭐ **Manager Stretch Flag:** {score['manager_stretch_narrative']}")
+                    st.info(f"**Manager Stretch Flag:** {score['manager_stretch_narrative']}")
 
-                # Phone screen questions
+                # Phone screen questions as cards
                 if score['phone_screen_questions']:
-                    st.write("**Phone Screen Questions:**")
+                    st.markdown('<div class="section-label">Phone Screen Questions</div>', unsafe_allow_html=True)
                     questions = json.loads(score['phone_screen_questions']) if isinstance(score['phone_screen_questions'], str) else score['phone_screen_questions']
                     for i, q in enumerate(questions, 1):
                         if isinstance(q, dict):
-                            st.write(f"**Q{i}:** {q.get('question', '')}")
-                            st.write(f"   *Dimension:* {q.get('dimension_tested', '')}")
-                            st.write(f"   *Listen for:* {q.get('what_to_listen_for', '')}")
-                            st.write(f"   *Red flags:* {q.get('red_flag_answers', '')}")
-                            st.write("")
+                            q_text = q.get('question', '')
+                            q_dim = q.get('dimension_tested', '')
+                            q_listen = q.get('what_to_listen_for', '')
+                            q_red = q.get('red_flag_answers', '')
+                            redflag_html = f'<div class="q-redflag">Red flags: {q_red}</div>' if q_red else ''
+                            st.markdown(f"""
+                            <div class="q-card">
+                                <div class="q-number">Question {i}</div>
+                                <div class="q-text">{q_text}</div>
+                                <div class="q-meta">
+                                    <span class="q-tag">{q_dim}</span>
+                                    Listen for: {q_listen}
+                                </div>
+                                {redflag_html}
+                            </div>
+                            """, unsafe_allow_html=True)
                         else:
                             st.write(f"**Q{i}:** {q}")
 
@@ -526,7 +1026,7 @@ def show_candidate_details():
 
     # ── Notes ─────────────────────────────────────────────────────────────────
     st.divider()
-    st.subheader("Notes")
+    st.markdown('<div class="section-label">Notes</div>', unsafe_allow_html=True)
     current_notes = candidate.get('notes', '') or ''
     new_notes = st.text_area("Add/edit notes", value=current_notes, height=100, key="candidate_notes")
     if st.button("Save Notes") and new_notes != current_notes:
@@ -538,12 +1038,12 @@ def show_candidate_details():
 
 def show_analytics():
     """Show pipeline analytics and funnel visualization."""
-    st.subheader("📈 Pipeline Analytics")
+    st.markdown('<div class="section-label">Pipeline Analytics</div>', unsafe_allow_html=True)
 
     stats = get_dashboard_stats()
 
-    # Pipeline Funnel
-    st.write("**Pipeline Funnel**")
+    # Pipeline Funnel — CSS tapered visualization
+    st.markdown('<div class="section-label">Pipeline Funnel</div>', unsafe_allow_html=True)
     total = max(stats['total_candidates'], 1)
     scored = stats['high'] + stats['medium'] + stats['low']
     phone_screen = stats.get('passed_senior', 0) + stats.get('passed_manager', 0)
@@ -556,14 +1056,20 @@ def show_analytics():
         ("Handed Off", handed_off),
     ]
 
+    funnel_html = '<div class="funnel-container">'
     for label, count in funnel_data:
-        col1, col2 = st.columns([1, 3])
-        with col1:
-            st.write(f"**{label}**")
-        with col2:
-            pct = (count / total) * 100
-            st.progress(min(pct / 100, 1.0))
-            st.caption(f"{count} ({pct:.0f}%)")
+        pct = (count / total) * 100
+        width_pct = max(pct, 8)  # minimum visible width
+        funnel_html += f"""
+        <div class="funnel-row">
+            <div class="funnel-label">{label}</div>
+            <div class="funnel-bar-wrap">
+                <div class="funnel-bar" style="width:{width_pct}%;">{count} ({pct:.0f}%)</div>
+            </div>
+        </div>
+        """
+    funnel_html += '</div>'
+    st.markdown(funnel_html, unsafe_allow_html=True)
 
     st.divider()
 
@@ -571,7 +1077,7 @@ def show_analytics():
     col1, col2 = st.columns(2)
 
     with col1:
-        st.write("**Tier Distribution**")
+        st.markdown('<div class="section-label">Tier Distribution</div>', unsafe_allow_html=True)
         tier_data = {
             'Tier': ['HIGH', 'MEDIUM', 'LOW', 'ELIMINATED'],
             'Count': [stats['high'], stats['medium'], stats['low'], stats['eliminated']]
@@ -580,7 +1086,7 @@ def show_analytics():
         st.bar_chart(tier_df.set_index('Tier'))
 
     with col2:
-        st.write("**Functional Area Breakdown**")
+        st.markdown('<div class="section-label">Area Breakdown</div>', unsafe_allow_html=True)
         area_dist = get_area_distribution()
         if area_dist:
             area_df = pd.DataFrame(area_dist)
@@ -590,12 +1096,18 @@ def show_analytics():
             except Exception:
                 st.dataframe(area_df, use_container_width=True, hide_index=True)
         else:
-            st.info("No scoring data yet.")
+            st.markdown("""
+            <div class="empty-state">
+                <div class="empty-icon">&#9673;</div>
+                <div class="empty-title">No scoring data</div>
+                <div class="empty-desc">Area breakdown will appear after candidates are scored.</div>
+            </div>
+            """, unsafe_allow_html=True)
 
     st.divider()
 
     # Processing Timeline
-    st.write("**Processing Timeline**")
+    st.markdown('<div class="section-label">Processing Timeline</div>', unsafe_allow_html=True)
     timeline = get_processing_timeline()
     if timeline:
         timeline_df = pd.DataFrame(timeline)
@@ -603,23 +1115,41 @@ def show_analytics():
         timeline_df = timeline_df.set_index('date')
         st.bar_chart(timeline_df['count'])
     else:
-        st.info("No processing data yet.")
+        st.markdown("""
+        <div class="empty-state">
+            <div class="empty-icon">&#9634;</div>
+            <div class="empty-title">No processing data</div>
+            <div class="empty-desc">Timeline will populate as resumes are processed.</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     # Summary metrics
     st.divider()
-    st.write("**Summary**")
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        pass_rate = (scored / total * 100) if total > 0 else 0
-        st.metric("Pass Rate (scored/total)", f"{pass_rate:.0f}%")
-    with col2:
-        high_rate = (stats['high'] / total * 100) if total > 0 else 0
-        st.metric("High Tier Rate", f"{high_rate:.0f}%")
-    with col3:
-        elim_rate = (stats['eliminated'] / total * 100) if total > 0 else 0
-        st.metric("Elimination Rate", f"{elim_rate:.0f}%")
-    with col4:
-        st.metric("Avg Areas/Candidate", f"{_avg_areas_scored():.1f}")
+    pass_rate = (scored / total * 100) if total > 0 else 0
+    high_rate = (stats['high'] / total * 100) if total > 0 else 0
+    elim_rate = (stats['eliminated'] / total * 100) if total > 0 else 0
+    avg_areas = _avg_areas_scored()
+
+    st.markdown(f"""
+    <div class="metric-strip">
+        <div class="metric-tile accent-success">
+            <div class="metric-value">{pass_rate:.0f}%</div>
+            <div class="metric-label">Pass Rate</div>
+        </div>
+        <div class="metric-tile accent-success">
+            <div class="metric-value">{high_rate:.0f}%</div>
+            <div class="metric-label">High Tier Rate</div>
+        </div>
+        <div class="metric-tile accent-danger">
+            <div class="metric-value">{elim_rate:.0f}%</div>
+            <div class="metric-label">Elimination Rate</div>
+        </div>
+        <div class="metric-tile">
+            <div class="metric-value">{avg_areas:.1f}</div>
+            <div class="metric-label">Avg Areas / Candidate</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 
 def _avg_areas_scored():
@@ -643,14 +1173,20 @@ def _avg_areas_scored():
 
 def show_eliminated_review():
     """Show eliminated candidates for review and feedback."""
-    st.subheader("🔍 Eliminated Candidates — Pending Review")
-    st.write("Review eliminated candidates to verify the rubric's assessment. "
-             "Override or provide feedback to improve the rubric.")
+    st.markdown('<div class="section-label">Eliminated Candidates — Pending Review</div>', unsafe_allow_html=True)
+    st.caption("Review eliminated candidates to verify the rubric's assessment. "
+               "Override or provide feedback to improve the rubric.")
 
     candidates = get_all_candidates('eliminated_pending_review')
 
     if not candidates:
-        st.success("No eliminated candidates pending review.")
+        st.markdown("""
+        <div class="empty-state">
+            <div class="empty-icon">&#10003;</div>
+            <div class="empty-title">All clear</div>
+            <div class="empty-desc">No eliminated candidates pending review.</div>
+        </div>
+        """, unsafe_allow_html=True)
         return
 
     for c in candidates:
@@ -708,14 +1244,20 @@ def show_eliminated_review():
 
 def show_rubric_feedback():
     """Show accumulated rubric feedback."""
-    st.subheader("📝 Rubric Feedback Queue")
-    st.write("Accumulated feedback from eliminated candidate reviews. "
-             "Use this to identify patterns and update rubrics.")
+    st.markdown('<div class="section-label">Rubric Feedback Queue</div>', unsafe_allow_html=True)
+    st.caption("Accumulated feedback from eliminated candidate reviews. "
+               "Use this to identify patterns and update rubrics.")
 
     feedback = get_pending_feedback()
 
     if not feedback:
-        st.success("No pending rubric feedback.")
+        st.markdown("""
+        <div class="empty-state">
+            <div class="empty-icon">&#10003;</div>
+            <div class="empty-title">No pending feedback</div>
+            <div class="empty-desc">Rubric feedback will appear here as you review eliminated candidates.</div>
+        </div>
+        """, unsafe_allow_html=True)
         return
 
     for fb in feedback:
@@ -736,16 +1278,21 @@ def show_rubric_feedback():
 
 def show_handoff_generator():
     """Generate handoff emails for candidates who passed phone screen."""
-    st.subheader("📧 Handoff Email Generator")
-    st.write("Generate pre-written emails for candidates who passed the phone screen.")
+    st.markdown('<div class="section-label">Handoff Email Generator</div>', unsafe_allow_html=True)
+    st.caption("Generate pre-written emails for candidates who passed the phone screen.")
 
     # Get candidates with passing status
     candidates = (get_all_candidates('phone_screen_pass_senior') +
                   get_all_candidates('phone_screen_pass_manager'))
 
     if not candidates:
-        st.info("No candidates have passed the phone screen yet. "
-                "Update a candidate's status to 'Phone Screen Pass' from the Candidate Details page.")
+        st.markdown("""
+        <div class="empty-state">
+            <div class="empty-icon">&#9993;</div>
+            <div class="empty-title">No candidates ready for handoff</div>
+            <div class="empty-desc">Update a candidate's status to 'Phone Screen Pass' from the Candidate Details page to generate handoff emails.</div>
+        </div>
+        """, unsafe_allow_html=True)
         return
 
     for c in candidates:
@@ -766,24 +1313,34 @@ def show_handoff_generator():
 
 def show_system_status():
     """Show system status and failed resume management."""
-    st.subheader("⚙️ System Status")
+    st.markdown('<div class="section-label">System Status</div>', unsafe_allow_html=True)
 
     # Failed files
     failed_folder = os.path.join(PROJECT_DIR, "AMI_Candidates_Failed")
     inbox_folder = os.path.join(PROJECT_DIR, "AMI_Candidates_Inbox")
     processed_folder = os.path.join(PROJECT_DIR, "AMI_Candidates_Processed")
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        inbox_count = len([f for f in os.listdir(inbox_folder) if os.path.isfile(os.path.join(inbox_folder, f))]) if os.path.exists(inbox_folder) else 0
-        st.metric("Inbox", inbox_count)
-    with col2:
-        processed_count = len([f for f in os.listdir(processed_folder) if os.path.isfile(os.path.join(processed_folder, f))]) if os.path.exists(processed_folder) else 0
-        st.metric("Processed", processed_count)
-    with col3:
-        failed_files = [f for f in os.listdir(failed_folder)
-                        if not f.endswith('.reason.txt') and os.path.isfile(os.path.join(failed_folder, f))] if os.path.exists(failed_folder) else []
-        st.metric("Failed", len(failed_files))
+    inbox_count = len([f for f in os.listdir(inbox_folder) if os.path.isfile(os.path.join(inbox_folder, f))]) if os.path.exists(inbox_folder) else 0
+    processed_count = len([f for f in os.listdir(processed_folder) if os.path.isfile(os.path.join(processed_folder, f))]) if os.path.exists(processed_folder) else 0
+    failed_files = [f for f in os.listdir(failed_folder)
+                    if not f.endswith('.reason.txt') and os.path.isfile(os.path.join(failed_folder, f))] if os.path.exists(failed_folder) else []
+
+    st.markdown(f"""
+    <div class="metric-strip">
+        <div class="metric-tile">
+            <div class="metric-value">{inbox_count}</div>
+            <div class="metric-label">Inbox</div>
+        </div>
+        <div class="metric-tile accent-success">
+            <div class="metric-value">{processed_count}</div>
+            <div class="metric-label">Processed</div>
+        </div>
+        <div class="metric-tile accent-danger">
+            <div class="metric-value">{len(failed_files)}</div>
+            <div class="metric-label">Failed</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     st.divider()
 
