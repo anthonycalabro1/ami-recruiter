@@ -840,17 +840,16 @@ def show_candidate_details():
     candidate_options = {f"{c['name']} (ID: {c['id']})": c['id'] for c in candidates}
     option_keys = list(candidate_options.keys())
 
-    # Pre-select from click-through navigation
-    default_idx = 0
+    # Pre-select from click-through navigation (only on initial jump)
     jump_id = st.session_state.get('jump_to_candidate')
     if jump_id is not None:
-        for i, (label, cid) in enumerate(candidate_options.items()):
+        for label, cid in candidate_options.items():
             if cid == jump_id:
-                default_idx = i
+                st.session_state['_detail_selector'] = label
                 break
         st.session_state.jump_to_candidate = None   # Consume the jump
 
-    selected = st.selectbox("Select Candidate", option_keys, index=default_idx)
+    selected = st.selectbox("Select Candidate", option_keys, key="_detail_selector")
     candidate_id = candidate_options[selected]
 
     candidate = get_candidate(candidate_id)
