@@ -19,8 +19,8 @@ RUBRIC_PROMPTS = {
 "Strategy & Business Case": """You are an expert AMI recruiting evaluator. Score this candidate for the STRATEGY & BUSINESS CASE functional area.
 
 GATE CRITERIA (all must pass or candidate is ELIMINATED):
-- Gate 1: AMI Experience - Must have direct AMI-specific strategy/business case work. Grid modernization strategy WITHOUT AMI specificity does NOT count. Look for AMI business case, AMI cost-benefit analysis, AMI strategy, AMI vendor procurement.
-- Gate 2: Minimum AMI Years - Senior: 3+ years. Manager: 7+ years. The candidate's role routing is: {role_routing}. If eliminated, their AMI years are: {ami_years}.
+- Gate 1: AMI Experience - Must have direct AMI/metering-specific strategy/business case work. The terms "AMI", "smart meter/smart metering", "next generation metering", and "Advanced Metering Infrastructure" are all synonymous and ALL count. Grid modernization strategy WITHOUT metering specificity does NOT count. Look for AMI business case, AMI cost-benefit analysis, AMI strategy, AMI vendor procurement, smart metering strategy.
+- Gate 2: Minimum AMI Years - Senior: 3+ years. Manager: 7+ years. The candidate's role routing is: {role_routing}. If eliminated, their AMI years are: {ami_years}. ROUTING INTERPRETATION: "senior_only" = evaluate at Senior level (3+ years required). "senior_plus_manager_flag" = evaluate at Senior level (3+ years required, PASSES) — the manager flag is advisory only and does NOT raise the Gate 2 threshold. "manager_only" = evaluate at Manager level (7+ years required).
 - Gate 3: Functional Area Match - Must show experience in at least one: Strategic Advisory, Business Case Development, or Procurement Advisory.
 
 CRITICAL RULE - AMI vs Grid Modernization:
@@ -41,8 +41,8 @@ TIERING: HIGH (4.0-5.0), MEDIUM (3.0-3.99), LOW (2.0-2.99), ELIMINATED (failed g
 "Business Integration": """You are an expert AMI recruiting evaluator. Score this candidate for the BUSINESS INTEGRATION functional area.
 
 GATE CRITERIA (all must pass or candidate is ELIMINATED):
-- Gate 1: AMI Experience - Must have direct AMI-specific business integration work. General utility consulting without AMI specificity does NOT count.
-- Gate 2: Minimum AMI Years - Senior: 3+ years. Manager: 7+ years. The candidate's role routing is: {role_routing}. If eliminated, their AMI years are: {ami_years}.
+- Gate 1: AMI Experience - Must have direct AMI/metering-specific business integration work. The terms "AMI", "smart meter/smart metering", "next generation metering", and "Advanced Metering Infrastructure" are all synonymous and ALL count. General utility consulting without metering specificity does NOT count.
+- Gate 2: Minimum AMI Years - Senior: 3+ years. Manager: 7+ years. The candidate's role routing is: {role_routing}. If eliminated, their AMI years are: {ami_years}. ROUTING INTERPRETATION: "senior_only" = evaluate at Senior level (3+ years required). "senior_plus_manager_flag" = evaluate at Senior level (3+ years required, PASSES) — the manager flag is advisory only and does NOT raise the Gate 2 threshold. "manager_only" = evaluate at Manager level (7+ years required).
 - Gate 3: Functional Area Match - Must show experience in at least one: Business Process Design (BPD), Project Management (PM), or Change Management (CM).
 
 BI SUBCATEGORIES:
@@ -64,8 +64,8 @@ TIERING: HIGH (4.0-5.0), MEDIUM (3.0-3.99), LOW (2.0-2.99), ELIMINATED (failed g
 "System Integration": """You are an expert AMI recruiting evaluator. Score this candidate for the SYSTEM INTEGRATION functional area.
 
 GATE CRITERIA (all must pass or candidate is ELIMINATED):
-- Gate 1: AMI Experience - Must have direct AMI-specific system integration work. General utility IT/CIS/ERP without AMI specificity does NOT count.
-- Gate 2: Minimum AMI Years - Senior: 3+ years. Manager: 7+ years. The candidate's role routing is: {role_routing}. If eliminated, their AMI years are: {ami_years}.
+- Gate 1: AMI Experience - Must have direct AMI/metering-specific system integration work. The terms "AMI", "smart meter/smart metering", "next generation metering", and "Advanced Metering Infrastructure" are all synonymous and ALL count. SI work includes (but is not limited to): test strategy, defect management, test execution, and quality assurance on AMI platforms — these ARE SI work. General utility IT/CIS/ERP without metering specificity does NOT count.
+- Gate 2: Minimum AMI Years - Senior: 3+ years. Manager: 7+ years. The candidate's role routing is: {role_routing}. If eliminated, their AMI years are: {ami_years}. ROUTING INTERPRETATION: "senior_only" = evaluate at Senior level (3+ years required). "senior_plus_manager_flag" = evaluate at Senior level (3+ years required, PASSES) — the manager flag is advisory only and does NOT raise the Gate 2 threshold. "manager_only" = evaluate at Manager level (7+ years required).
 - Gate 3: Functional Area Match - Must show experience in at least one: Solution Architecture, Technical Design, Applications Development, Testing, or Cutover.
 
 SI SUBCATEGORIES:
@@ -93,8 +93,8 @@ TIERING: HIGH (4.0-5.0), MEDIUM (3.0-3.99), LOW (2.0-2.99), ELIMINATED (failed g
 "Field Deployment Management": """You are an expert AMI recruiting evaluator. Score this candidate for the FIELD DEPLOYMENT MANAGEMENT functional area.
 
 GATE CRITERIA (all must pass or candidate is ELIMINATED):
-- Gate 1: AMI Experience - Must have direct AMI field deployment experience (meter deployment, network device deployment). General utility construction/field ops without AMI specificity does NOT count.
-- Gate 2: Minimum AMI Years - Senior: 3+ years. Manager: 7+ years. The candidate's role routing is: {role_routing}. If eliminated, their AMI years are: {ami_years}.
+- Gate 1: AMI Experience - Must have direct AMI/metering field deployment experience (meter deployment, network device deployment). The terms "AMI", "smart meter/smart metering", "next generation metering", and "Advanced Metering Infrastructure" are all synonymous and ALL count. General utility construction/field ops without metering specificity does NOT count.
+- Gate 2: Minimum AMI Years - Senior: 3+ years. Manager: 7+ years. The candidate's role routing is: {role_routing}. If eliminated, their AMI years are: {ami_years}. ROUTING INTERPRETATION: "senior_only" = evaluate at Senior level (3+ years required). "senior_plus_manager_flag" = evaluate at Senior level (3+ years required, PASSES) — the manager flag is advisory only and does NOT raise the Gate 2 threshold. "manager_only" = evaluate at Manager level (7+ years required).
 - Gate 3: Functional Area Match - Must show experience in deployment strategy, MIC vendor management, asset logistics, deployment tracking, network deployment, or meter commissioning.
 
 KEY DOMAINS:
@@ -122,8 +122,8 @@ TIERING: HIGH (4.0-5.0), MEDIUM (3.0-3.99), LOW (2.0-2.99), ELIMINATED (failed g
 "AMI Operations": """You are an expert AMI recruiting evaluator. Score this candidate for the AMI OPERATIONS functional area.
 
 GATE CRITERIA (all must pass or candidate is ELIMINATED):
-- Gate 1: AMI Experience - Must have direct AMI operations experience (operating HES and/or MDMS). General IT operations/system admin without AMI specificity does NOT count.
-- Gate 2: Minimum AMI Years - Senior: 3+ years. Manager: 7+ years. The candidate's role routing is: {role_routing}. If eliminated, their AMI years are: {ami_years}.
+- Gate 1: AMI Experience - Must have direct AMI/metering operations experience (operating HES and/or MDMS). The terms "AMI", "smart meter/smart metering", "next generation metering", and "Advanced Metering Infrastructure" are all synonymous and ALL count. General IT operations/system admin without metering specificity does NOT count.
+- Gate 2: Minimum AMI Years - Senior: 3+ years. Manager: 7+ years. The candidate's role routing is: {role_routing}. If eliminated, their AMI years are: {ami_years}. ROUTING INTERPRETATION: "senior_only" = evaluate at Senior level (3+ years required). "senior_plus_manager_flag" = evaluate at Senior level (3+ years required, PASSES) — the manager flag is advisory only and does NOT raise the Gate 2 threshold. "manager_only" = evaluate at Manager level (7+ years required).
 - Gate 3: PRODUCTION EXPERIENCE (CRITICAL) - Must have ACTUAL production environment experience. Testing-only experience in dev/QA/UAT does NOT qualify. Must demonstrate operating live AMI systems serving real customers. If testing-only, suggest cross-referencing against System Integration rubric instead.
 
 KEY DOMAINS:

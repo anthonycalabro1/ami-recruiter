@@ -162,7 +162,8 @@ def process_resume(filepath):
                 weighted_score = score_result.get('weighted_score', 0)
                 scoring_narrative = score_result.get('scoring_narrative', '')
 
-                logger.info("           -> %s: %s (%.2f)", area, tier, weighted_score)
+                score_display = f"{weighted_score:.2f}" if weighted_score is not None else "N/A"
+                logger.info("           -> %s: %s (%s)", area, tier, score_display)
 
                 # Generate interview questions if not eliminated
                 questions = None

@@ -38,19 +38,87 @@ def _extract_pdf(filepath):
 
 
 def _extract_docx(filepath):
-    """Extract text from Word document."""
+    """Extract text from Word document.
+
+    Uses raw XML parsing to capture all text, including content inside
+    nested tables and complex layouts that python-docx's high-level API misses.
+    Falls back to the high-level API result if XML extraction yields less text.
+    """
     import docx
-    doc = docx.Document(filepath)
-    text = ""
-    for para in doc.paragraphs:
-        text += para.text + "\n"
-    # Also extract text from tables
-    for table in doc.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                text += cell.text + " "
-            text += "\n"
-    return text.strip()
+
+    # High-level extraction (paragraphs + top-level tables)
+    hl_text = ""
+    try:
+        doc = docx.Document(filepath)
+        hl_parts = []
+        for para in doc.paragraphs:
+            if para.text.strip():
+                hl_parts.append(para.text)
+        for table in doc.tables:
+            for row in table.rows:
+                row_texts = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+                if row_texts:
+                    hl_parts.append(" | ".join(row_texts))
+        hl_text = "\n".join(hl_parts)
+    except Exception:
+        # python-docx can fail on non-standard DOCX files (missing
+        # relationships, etc.).  Fall through to raw XML extraction.
+        pass
+
+    # Raw XML extraction — catches nested tables, content controls, text boxes,
+    # and works even when python-docx rejects the file.
+    import zipfile
+    import xml.etree.ElementTree as ET
+    # Transitional and Strict OOXML use different namespaces
+    ns_transitional = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+    ns_strict = "{http://purl.oclc.org/ooxml/wordprocessingml/main}"
+    xml_parts = []
+    current_para = []
+    try:
+        with zipfile.ZipFile(filepath) as zf:
+            for part_name in zf.namelist():
+                if part_name in ("word/document.xml", "word/header1.xml",
+                                 "word/header2.xml", "word/footer1.xml",
+                                 "word/footer2.xml"):
+                    tree = ET.parse(zf.open(part_name))
+                    for elem in tree.iter():
+                        tag = elem.tag
+                        if tag.endswith("}p") and (tag.startswith(ns_transitional) or tag.startswith(ns_strict)):
+                            # Flush previous paragraph
+                            para_text = "".join(current_para).strip()
+                            if para_text:
+                                xml_parts.append(para_text)
+                            current_para = []
+                        elif tag.endswith("}t") and (tag.startswith(ns_transitional) or tag.startswith(ns_strict)) and elem.text:
+                            current_para.append(elem.text)
+                        elif tag.endswith("}tab") and (tag.startswith(ns_transitional) or tag.startswith(ns_strict)):
+                            current_para.append("\t")
+                        elif tag.endswith("}br") and (tag.startswith(ns_transitional) or tag.startswith(ns_strict)):
+                            current_para.append("\n")
+            # Flush last paragraph
+            para_text = "".join(current_para).strip()
+            if para_text:
+                xml_parts.append(para_text)
+    except zipfile.BadZipFile:
+        # Not a valid ZIP/DOCX at all — may be a legacy .doc binary format
+        if hl_text:
+            return hl_text
+        raise ValueError(
+            f"Cannot read {Path(filepath).name}: file is not a valid DOCX "
+            f"(ZIP) archive. If this is a legacy .doc file, please re-save "
+            f"it as .docx in Word first."
+        )
+
+    xml_text = "\n".join(xml_parts)
+
+    if not xml_text and not hl_text:
+        raise ValueError(
+            f"Cannot extract text from {Path(filepath).name}: the file may be "
+            f"a legacy .doc binary format. Please re-save it as .docx in Word."
+        )
+
+    # Return whichever method captured more content
+    return xml_text if len(xml_text) >= len(hl_text) else hl_text
 
 
 def _extract_txt(filepath):
@@ -64,10 +132,10 @@ PARSE_PROMPT = """You are an expert AMI (Advanced Metering Infrastructure) recru
 Analyze the following resume and extract the information below. Be thorough and precise. If information is not found in the resume, use null.
 
 IMPORTANT RULES:
-- For AMI experience years: ONLY count time spent on AMI-specific programs. General utility, smart grid, or grid modernization work without AMI specificity does NOT count.
+- For AMI experience years: ONLY count time spent on metering-focused programs. The following terms are ALL synonymous with AMI and SHOULD be counted: "Advanced Metering Infrastructure", "AMI", "smart meter/smart metering", "next generation metering". General utility, smart grid, or grid modernization work without metering specificity does NOT count — the work must be focused on metering to qualify. Roles that explicitly reference AMI programs even without using the word "AMI" in the title DO count — e.g., deployment execution, hypercare, release governance, or issue triage on a program that is otherwise documented as AMI on the resume should be counted. When in doubt about a borderline role, include it if the surrounding context (same program, same client) is clearly AMI.
 - For functional areas: Map the candidate's experience to these five areas: Strategy & Business Case, Business Integration, System Integration, Field Deployment Management, AMI Operations.
 - A candidate may have experience in multiple functional areas.
-- Look for specific AMI signals: vendor names (Itron, Landis+Gyr, Sensus/Xylem, Siemens/Trilliant), AMI-specific terminology (head-end, MDMS, VEE, OTA, mesh network, remote connect/disconnect, meter-to-cash, etc.), named AMI programs, meter deployment references.
+- Look for specific AMI signals: vendor names (Itron, Landis+Gyr, Sensus/Xylem, Siemens/Trilliant), AMI-specific terminology (head-end, MDMS, VEE, OTA, mesh network, remote connect/disconnect, meter-to-cash, etc.), named AMI programs, meter deployment references, AND metering-synonymous terms (smart meter, smart metering, next generation metering).
 
 Return your analysis as a JSON object with exactly this structure:
 
